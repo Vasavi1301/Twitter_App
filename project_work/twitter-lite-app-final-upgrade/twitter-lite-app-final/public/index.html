@@ -1,0 +1,89 @@
+
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Mini Twitter</title><link rel="stylesheet" href="/styles.css"></head><body>
+<div class="container">
+  <div class="header">
+    <div class="brand">Mini Twitter</div>
+    <div><a class="link" href="/login.html">Login</a> &nbsp; <a class="link" href="/register.html">Register</a></div>
+  </div>
+
+  <section class="card">
+    <div id="composer" class="compose" style="display:none">
+      <div class="avatar" id="avatar">U</div>
+      <div style="flex:1">
+        <textarea id="tweetText" placeholder="What's happening?"></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+          <div class="small" id="count">0 / 280</div>
+          <button id="tweetBtn" class="button">Tweet</button>
+        </div>
+      </div>
+    </div>
+    <div id="loginNotice" style="padding:12px;color:var(--muted);display:none">Please <a href="/login.html">login</a> to post tweets.</div>
+  </section>
+
+  <section id="timeline" class="card">
+    <h3 style="margin-top:0">Timeline</h3>
+    <div id="tweets"></div>
+  </section>
+</div>
+
+<script>
+async function getMe() {
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+  try {
+    const res = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + token } });
+    if (!res.ok) { localStorage.removeItem('token'); return null; }
+    return await res.json();
+  } catch (e) { return null; }
+}
+
+async function loadTweets() {
+  try {
+    const res = await fetch('/api/tweets');
+    const tweets = await res.json();
+    const container = document.getElementById('tweets');
+    container.innerHTML = '';
+    tweets.forEach(t => {
+      const el = document.createElement('div');
+      el.className = 'tweet';
+      el.innerHTML = '<div style="width:48px"><div class="avatar" style="width:40px;height:40px;border-radius:50%">'+(t.user? t.user[0].toUpperCase():'A')+'</div></div>' +
+                     '<div style="flex:1"><div class="meta">'+(t.user||'anonymous')+'</div><div>'+t.text+'</div><div class="small">'+new Date(t.createdAt).toLocaleString()+'</div></div>';
+      container.appendChild(el);
+    });
+  } catch (e) { console.error(e); }
+}
+
+document.getElementById('tweetBtn').addEventListener('click', async () => {
+  const text = document.getElementById('tweetText').value;
+  if (!text.trim()) { alert('Write something'); return; }
+  const token = localStorage.getItem('token');
+  if (!token) { alert('Please login'); window.location.href = '/login.html'; return; }
+  try {
+    const res = await fetch('/api/tweets', { method:'POST', headers: {'Content-Type':'application/json', Authorization:'Bearer '+token }, body: JSON.stringify({ text }) });
+    if (!res.ok) { const d = await res.json(); alert(d.message||'Could not post'); return; }
+    document.getElementById('tweetText').value='';
+    loadTweets();
+  } catch (e) { alert('Error'); console.error(e); }
+});
+
+// character count
+document.getElementById('tweetText').addEventListener('input', (e)=>{
+  const v = e.target.value; document.getElementById('count').textContent = v.length + ' / 280';
+});
+
+// initial UI
+(async ()=>{
+  await loadTweets();
+  const me = await getMe();
+  if (me && me.username) {
+    document.getElementById('composer').style.display = 'flex';
+    document.getElementById('loginNotice').style.display = 'none';
+    document.getElementById('avatar').textContent = me.username[0].toUpperCase();
+  } else {
+    document.getElementById('composer').style.display = 'none';
+    document.getElementById('loginNotice').style.display = 'block';
+  }
+})();
+</script>
+</body></html>

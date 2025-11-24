@@ -1,0 +1,34 @@
+
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Register - Mini Twitter</title><link rel="stylesheet" href="/styles.css"></head>
+<body>
+  <div class="form-wrap">
+    <div class="form-card card">
+      <h2 style="margin-top:0">Create your account</h2>
+      <p style="color:var(--muted)">Join Mini Twitter — it's quick and easy.</p>
+      <form id="regForm">
+        <input id="username" class="form-input" placeholder="Username" required />
+        <input id="password" class="form-input" type="password" placeholder="Password" required />
+        <button type="submit" class="form-button">Create account</button>
+      </form>
+      <p style="color:var(--muted);margin-top:12px">Already have an account? <a href="/login.html">Login</a></p>
+    </div>
+  </div>
+
+<script>
+document.getElementById('regForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  const res = await fetch('/api/register', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  if (!res.ok) { alert(data.message || 'Registration failed'); return; }
+  alert('Registered successfully. Please login.');
+  window.location.href = '/login.html';
+});
+</script>
+</body></html>
